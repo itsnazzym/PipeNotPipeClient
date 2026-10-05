@@ -1,0 +1,17 @@
+def forkConfigFile = rootProject.file('config/fork.properties')
+def forkConfig = new Properties()
+forkConfigFile.withInputStream { forkConfig.load(it) }
+ext.forkConfig = forkConfig
+
+['app.id', 'app.name', 'app.versionName', 'app.versionCode', 'app.repository',
+ 'app.updates.enabled', 'android.compileSdk', 'android.targetSdk', 'java.version'].each { key ->
+    if (!forkConfig.getProperty(key)?.trim()) {
+        throw new GradleException("Missing fork configuration: ${key}")
+    }
+}
+if (!(forkConfig.getProperty('app.updates.enabled') in ['true', 'false'])) {
+    throw new GradleException('app.updates.enabled must be true or false')
+}
+if (!(forkConfig.getProperty('app.repository') ==~ /[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+/)) {
+    throw new GradleException('app.repository must have the form owner/repository')
+}

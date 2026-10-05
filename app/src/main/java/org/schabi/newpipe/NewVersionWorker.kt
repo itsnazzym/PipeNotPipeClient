@@ -89,6 +89,7 @@ class NewVersionWorker(
 
     @Throws(IOException::class, ReCaptchaException::class)
     private fun checkNewVersion() {
+        if (!BuildConfig.FORK_UPDATES_ENABLED) return
         // Check if the current apk is a github one or not.
 //        if (!isReleaseApk()) {
 //            return
@@ -193,7 +194,7 @@ class NewVersionWorker(
         private val DEBUG = MainActivity.DEBUG
         private val TAG = NewVersionWorker::class.java.simpleName
         private val RELEASE_APK_ABIS = listOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
-        private const val NEWPIPE_API_URL = "https://api.github.com/repositories/490984887/releases"
+        private val NEWPIPE_API_URL = BuildConfig.FORK_RELEASES_URL
         private const val IS_MANUAL = "isManual"
 
         private fun getReleaseApkAbi(name: String): String? {

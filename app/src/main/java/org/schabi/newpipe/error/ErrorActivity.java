@@ -73,7 +73,7 @@ public class ErrorActivity extends AppCompatActivity {
     public static final String ERROR_EMAIL_SUBJECT = "Exception in ";
 
     public static final String ERROR_GITHUB_ISSUE_URL
-            = "https://github.com/InfinityLoop1308/PipePipe/issues";
+            = BuildConfig.FORK_REPOSITORY_URL + "/issues";
 
     public static final DateTimeFormatter CURRENT_TIMESTAMP_FORMATTER
             = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -117,8 +117,8 @@ public class ErrorActivity extends AppCompatActivity {
         addGuruMeditation();
         currentTimeStamp = CURRENT_TIMESTAMP_FORMATTER.format(LocalDateTime.now());
 
-        activityErrorBinding.errorReportEmailButton.setOnClickListener(v ->
-                openPrivacyPolicyDialog(this, "EMAIL"));
+        // Fork reports belong to this repository; no fork support email is configured yet.
+        activityErrorBinding.errorReportEmailButton.setVisibility(android.view.View.GONE);
 
         activityErrorBinding.errorReportCopyButton.setOnClickListener(v ->
                 ShareUtils.copyToClipboard(this, buildMarkdown()));

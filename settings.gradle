@@ -31,9 +31,11 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "PipePipe"
+rootProject.name = "PipeNotPipe"
 
 include ':app'
 include ':ffmpeg'
+include ':core:cache'
+include ':data:media'
 
 includeBuild('../PipePipeExtractor')

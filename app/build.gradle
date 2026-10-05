@@ -6,26 +6,32 @@ plugins {
     id "org.jetbrains.kotlin.kapt"
 }
 
+apply from: rootProject.file('gradle/fork-config.gradle')
+
 def keyPath = System.getenv("KEY_PATH")
 def keyStorePassword = System.getenv("KEY_STORE_PASSWORD")
 def signingKeyAlias = System.getenv("KEY_ALIAS")
 def signingKeyPassword = System.getenv("KEY_PASSWORD")
-def baseVersionCode = 1109
-def appVersionName = "5.4.0"
+def baseVersionCode = forkConfig.getProperty('app.versionCode').toInteger()
+def appVersionName = forkConfig.getProperty('app.versionName')
+def forkAppName = forkConfig.getProperty('app.name')
 def abiCodes = ['armeabi-v7a': 1, 'x86': 2, 'x86_64': 3, 'arm64-v8a': 4]
 def stableBuildConfigVersionCode =
         (100 * baseVersionCode) + abiCodes['armeabi-v7a']
 
 android {
-    compileSdk 37
+    compileSdk forkConfig.getProperty('android.compileSdk').toInteger()
 
     defaultConfig {
-        applicationId "InfinityLoop1309.NewPipeEnhanced"
+        applicationId forkConfig.getProperty('app.id')
         minSdk 23
         //noinspection OldTargetApi,ExpiredTargetSdkVersion
-        targetSdk 36
+        targetSdk forkConfig.getProperty('android.targetSdk').toInteger()
         versionCode baseVersionCode
         versionName appVersionName
+        buildConfigField 'boolean', 'FORK_UPDATES_ENABLED', forkConfig.getProperty('app.updates.enabled')
+        buildConfigField 'String', 'FORK_RELEASES_URL', '"https://api.github.com/repos/' + forkConfig.getProperty('app.repository') + '/releases"'
+        buildConfigField 'String', 'FORK_REPOSITORY_URL', '"https://github.com/' + forkConfig.getProperty('app.repository') + '"'
         multiDexEnabled true
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -60,17 +66,8 @@ android {
         debug {
             debuggable true
 
-            // suffix the app id and the app name with git branch name
-            def workingBranch = getGitWorkingBranch()
-            def normalizedWorkingBranch = workingBranch.replaceFirst("^[^A-Za-z]+", "").replaceAll("[^0-9A-Za-z]+", "")
-            if (true) {
-                // default values when branch name could not be determined or is master or dev
-                applicationIdSuffix ".debug"
-                resValue "string", "app_name", "PipePipe Debug"
-            } else {
-                applicationIdSuffix ".debug." + normalizedWorkingBranch
-                resValue "string", "app_name", "PipePipe " + workingBranch
-            }
+            applicationIdSuffix ".debug"
+            resValue "string", "app_name", forkAppName + " Debug"
         }
 
         release {
@@ -79,9 +76,9 @@ android {
             }
             if (System.properties.containsKey('packageSuffix')) {
                 applicationIdSuffix System.getProperty('packageSuffix')
-                resValue "string", "app_name", "PipePipe " + System.getProperty('packageSuffix')
+                resValue "string", "app_name", forkAppName + " " + System.getProperty('packageSuffix')
             } else {
-                resValue "string", "app_name", "PipePipe"
+                resValue "string", "app_name", forkAppName
             }
             minifyEnabled true
             shrinkResources false // disabled to fix F-Droid's reproducible build
@@ -98,8 +95,8 @@ android {
         // Flag to enable support for the new language APIs
         coreLibraryDesugaringEnabled true
 
-        sourceCompatibility JavaVersion.VERSION_25
-        targetCompatibility JavaVersion.VERSION_25
+        sourceCompatibility JavaVersion.toVersion(forkConfig.getProperty('java.version'))
+        targetCompatibility JavaVersion.toVersion(forkConfig.getProperty('java.version'))
         encoding 'utf-8'
     }
 
@@ -132,7 +129,7 @@ tasks.withType(com.android.build.gradle.internal.tasks.ExtractVersionControlInfo
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     kotlinOptions {
-        jvmTarget = '25'
+        jvmTarget = forkConfig.getProperty('java.version')
     }
 }
 
@@ -156,7 +153,7 @@ androidComponents.onVariants(androidComponents.selector().all()) { variant ->
         }
         output.versionCode.set(versionCode)
         output.outputFileName.set(
-                "PipePipe_${appVersionName}-${abi ?: 'universal'}-${variant.name}.apk")
+                "${forkAppName}_${appVersionName}-${abi ?: 'universal'}-${variant.name}.apk")
     }
 }
 
@@ -178,6 +175,7 @@ afterEvaluate {
 }
 
 dependencies {
+    implementation project(':data:media')
 /** Desugaring **/
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 
@@ -297,20 +295,4 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.3.0'
     androidTestImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'org.bouncycastle:bcprov-jdk18on:1.85'
-}
-
-static String getGitWorkingBranch() {
-    try {
-        def gitProcess = "git rev-parse --abbrev-ref HEAD".execute()
-        gitProcess.waitFor()
-        if (gitProcess.exitValue() == 0) {
-            return gitProcess.text.trim()
-        } else {
-            // not a git repository
-            return ""
-        }
-    } catch (IOException ignored) {
-        // git was not found
-        return ""
-    }
 }

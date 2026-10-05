@@ -321,33 +321,12 @@ public final class ExtractorHelper {
                                                          final InfoItem.InfoType infoType,
                                                          final Single<I> loadFromNetwork) {
         checkServiceId(serviceId);
-        final Single<I> actualLoadFromNetwork = loadFromNetwork
-                .doOnSuccess(info -> cacheInfo(serviceId, url, info, infoType));
-
-        final Single<I> load;
-        if (forceLoad) {
-            CACHE.removeInfo(serviceId, url, infoType);
-            load = actualLoadFromNetwork;
-        } else {
-            load = Maybe.concat(ExtractorHelper.loadFromCache(serviceId, url, infoType),
-                            actualLoadFromNetwork.toMaybe())
-                    .firstElement() // Take the first valid
-                    .toSingle();
-        }
-
-        return load;
+        return CACHE.load(forceLoad, serviceId, url, infoType, loadFromNetwork);
     }
 
     static void cacheInfo(final int serviceId, @NonNull final String requestedUrl,
                           @NonNull final Info info, @NonNull final InfoItem.InfoType infoType) {
-        CACHE.putInfo(serviceId, requestedUrl, info, infoType);
-        // StreamInfo can canonicalize its URL. PlayerMediaItem keeps that canonical URL, while the
-        // detail request was cached under the originally entered URL. Cache both keys so clicking
-        // play cannot trigger a second full extraction.
-        if (infoType == InfoItem.InfoType.STREAM
-                && info.getUrl() != null && !requestedUrl.equals(info.getUrl())) {
-            CACHE.putInfo(serviceId, info.getUrl(), info, infoType);
-        }
+        CACHE.cacheResult(serviceId, requestedUrl, info, infoType);
     }
 
     /**
